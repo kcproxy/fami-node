@@ -27,7 +27,7 @@ permissions:
 jobs:
   build:
     strategy:
-      # 极致精简：仅保留 Linux 系统的 64 位架构 (amd64 和 arm64)
+      # 仅保留 Linux 系统的 amd64 和 arm64 架构
       matrix:
         goos: [linux]
         goarch: [amd64, arm64]
@@ -45,9 +45,7 @@ jobs:
       - name: Show workflow information
         id: get_filename
         run: |
-          # 移除了无效的 MIPS 和 ARM32 变量，更干净
           export _NAME=$(jq ".[\"$GOOS-$GOARCH\"].friendlyName" -r < .github/build/friendly-filenames.json)
-          # 添加保底名称，防止 json 匹配失败
           if [ "$_NAME" == "null" ] || [ -z "$_NAME" ]; then
             _NAME="$GOOS-$GOARCH"
           fi
@@ -99,12 +97,6 @@ jobs:
           touch -mt $(date +%Y01010000) *
           zip -9vr ../fami-node-$ASSET_NAME.zip .
           popd || exit 1
-          FILE=./fami-node-$ASSET_NAME.zip
-          DGST=$FILE.dgst
-          for METHOD in {"md5","sha1","sha256","sha512"}
-          do
-            openssl dgst -$METHOD $FILE | sed 's/([^)]*)//g' >>$DGST
-          done
 
       - name: Change the name
         run: |
@@ -122,6 +114,6 @@ jobs:
         if: github.event_name == 'release'
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./fami-node-${{ steps.get_filename.outputs.ASSET_NAME }}.zip*
+          file: ./fami-node-${{ steps.get_filename.outputs.ASSET_NAME }}.zip
           tag: ${{ github.ref }}
           file_glob: true
